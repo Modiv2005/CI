@@ -1,0 +1,90 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+#Ackley Function
+def ackley_function(X):
+    a = 20
+    b = 0.2
+    c = 2 * np.pi
+    n = X.shape[1]
+    term1 = -a * np.exp(-b * np.sqrt(np.sum(X**2, axis=1) / n))
+    term2 = -np.exp(np.sum(np.cos(c * X), axis=1) / n)
+    return term1 + term2 + a + np.exp(1)
+
+
+def calculate_probabilities(f_values):
+    reciprocal = 1 / f_values
+    total = np.sum(reciprocal)
+    probabilities = reciprocal / total
+    return probabilities
+
+
+def roulette_wheel_selection(probabilities):
+    cumulative_sum = np.cumsum(probabilities)
+    random_value = np.random.rand()
+    return np.where(cumulative_sum > random_value)[0][0]
+
+
+dimensions = 2
+candidates = 3
+lower_bound, upper_bound = -15,15
+reduction_factor = 0.97
+iterations = 10000
+
+
+candidate_positions = np.random.uniform(lower_bound, upper_bound, (candidates, dimensions))
+
+fitness_history = []
+
+
+for iteration in range(iterations):
+
+    f_values = ackley_function(candidate_positions)
+    fitness_history.append(f_values)  # Store fitness values for convergence plot
+
+
+    probabilities = calculate_probabilities(f_values)
+
+
+    new_positions = np.zeros_like(candidate_positions)
+    for i in range(candidates):
+        selected = roulette_wheel_selection(probabilities)
+        new_positions[i] = candidate_positions[selected]
+
+
+    range_reduction = (upper_bound - lower_bound) * (reduction_factor)
+    lower_bound += range_reduction / 2
+    upper_bound -= range_reduction / 2
+
+
+    candidate_positions = new_positions + np.random.uniform(-0.1, 0.1, size=new_positions.shape)
+
+
+    candidate_positions = np.clip(candidate_positions, lower_bound, upper_bound)
+
+
+    print(f"Iteration {iteration + 1}")
+    print("Candidate Positions:\n", candidate_positions)
+    print("Fitness Values:", f_values)
+    print("Probabilities:", probabilities)
+    print()
+
+
+fitness_history = np.array(fitness_history)
+
+
+plt.figure(figsize=(10, 6))
+
+for i in range(candidates):
+    plt.plot(range(1, iterations + 1), fitness_history[:, i], marker='o', label=f'Candidate {i + 1}')
+
+
+plt.xlabel('Iteration')
+plt.ylabel('f(X) (Fitness Values)')
+plt.title('Convergence of Ackley Function Values Over Iterations')
+plt.grid(True)
+plt.legend()
+
+
+plt.savefig("ackley_function_convergence_preserved.png")
+plt.show()
